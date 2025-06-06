@@ -74,7 +74,9 @@ https://www.mermaidchart.com/app/projects/55ef4afd-cb81-485e-a64f-61422b2cc6c7/d
    - Support offline functionality for essential features
    - Use webhook-based updates for real-time context changes
 
-### Macro Implementation Details with Timelines
+### Macro Implementation Details with Timelines 
+
+### MIDTerm Evaluation-Milestone 1 + Milestone 2
 
 #### Milestone 1: Core MCP Integration (Weeks 1-3)
 
@@ -96,6 +98,8 @@ https://www.mermaidchart.com/app/projects/55ef4afd-cb81-485e-a64f-61422b2cc6c7/d
   - Installation-level context injection working
   - Basic caching system with API usage optimization
   - Documentation of agent architecture and context handling
+
+### Final Evaluation - Milestone 3
 
 #### Milestone 3: Advanced Features & Optimization (Weeks 7-9)
 
