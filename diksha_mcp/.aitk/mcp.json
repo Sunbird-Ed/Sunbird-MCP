@@ -1,0 +1,8 @@
+{
+    "servers": {
+        "local-server-trial_1": {
+            "type": "sse",
+            "url": "http://localhost:3001/sse"
+        }
+    }
+}
