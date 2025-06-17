@@ -5,7 +5,7 @@
   "scripts": {
     "dev:inspector": "mcp-inspector"
   },
-  "devDependencies": {
+  "dependencies": {
     "@modelcontextprotocol/inspector": "0.6.0"
   }
 }

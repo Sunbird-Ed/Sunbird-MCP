@@ -48,7 +48,7 @@
       "configurations": [
         "Attach to Local MCP"
       ],
-      "preLaunchTask": "Open Agent Builder",
+      "preLaunchTask": "Open Agent Builder"
     },
     {
       "name": "Debug in Inspector (Edge)",

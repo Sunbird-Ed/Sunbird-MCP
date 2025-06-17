@@ -52,7 +52,7 @@ The DIKSHA Content Search MCP Server provides search and content retrieval capab
 
 4. **Start the server**
    ```bash
-   python -m src.main
+   python -m diksha_mcp.src.server
    ```
 
 ## 🛠️ Development

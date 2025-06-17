@@ -37,7 +37,7 @@
         "cwd": "${workspaceFolder}/inspector",
         "env": {
           "CLIENT_PORT": "5173",
-          "SERVER_PORT": "3000",
+          "SERVER_PORT": "3000"
         }
       },
       "problemMatcher": {
@@ -68,7 +68,7 @@
       },
       "dependsOn": [
         "Start MCP Server"
-      ],
+      ]
     },
     {
       "label": "Terminate All Tasks",

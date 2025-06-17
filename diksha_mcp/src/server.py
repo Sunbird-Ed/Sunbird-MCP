@@ -133,7 +133,7 @@ async def search_diksha_content(search_params: dict) -> str:
     Example input:
         {
             "filters": {
-                "primaryCategory": ["Digital Textbook"],
+                "primaryCategory": filters.get("primaryCategory", ["Digital Textbook"]),
                 "se_boards": ["CBSE"],
                 "se_gradeLevels": ["Class 12"],
                 "se_mediums": ["English"],
@@ -180,7 +180,7 @@ async def search_diksha_content(search_params: dict) -> str:
         request_body = {
             "request": {
                 "filters": {
-                    "primaryCategory": ["Digital Textbook"],
+                    "primaryCategory": ["Digital Textbook"],##Deliberately hardcoded to Digital Textbook
                     "visibility": filters.get("visibility", []),
                     "se_boards": filters.get("se_boards", []),
                     "se_gradeLevels": filters.get("se_gradeLevels", []),
@@ -267,7 +267,7 @@ async def read_diksha_content(params: dict) -> str:
         JSON string containing a list of artifact URLs for content items where mimeType is not 'application/vnd.ekstep.ecml-archive',
         or an error message.
     """
-    async def retrieve_content_ids(params: str) -> dict:
+    async def retrieve_content_ids(params: str) -> tuple[list[str] | None, str | None]:
         """
         Helper function to retrieve leaf node content IDs for a given content ID.
         
@@ -275,49 +275,50 @@ async def read_diksha_content(params: dict) -> str:
             params (str): The content ID to fetch leaf nodes for
             
         Returns:
-            list: List of content IDs for the leaf nodes
+            tuple[list[str] | None, str | None]: A tuple containing:
+                - List of content IDs for the leaf nodes, or None if there was an error
+                - Error message string if there was an error, or None on success
             
         Note:
             This is an internal helper function and should not be called directly.
         """
-        content_ids = []
         try:
             # Extract content_id from params
             content_id = params
             # Validate content_id
             if not content_id:
-                return json.dumps({"error": "content_id is required"})
+                return None, "content_id is required"
             if not re.match(r"^do_[0-9]+$", content_id):
-                return json.dumps({"error": "Invalid content_id format. Must start with 'do_' followed by numbers"})
+                return None, "Invalid content_id format. Must start with 'do_' followed by numbers"
 
             # Construct DIKSHA API URL
             api_url = f"https://diksha.gov.in/api/content/v1/read/{content_id}?contentType=TextBook"
 
             # Make async request to DIKSHA API
             async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    api_url
-                ) as response:
+                async with session.get(api_url) as response:
                     if response.status == 200:
                         data = await response.json()
-                        content_ids=data["result"]["content"]["leafNodes"]
-                        return content_ids
+                        content_ids = data["result"]["content"]["leafNodes"]
+                        return content_ids, None
                     else:
                         error_data = await response.text()
-                        return json.dumps({
-                            "error": f"DIKSHA API request failed with status {response.status}",
-                            "details": error_data
-                        })
+                        return None, f"DIKSHA API request failed with status {response.status}: {error_data}"
 
         except Exception as e:
-            return json.dumps({"error": "Failed to process request", "details": str(e)})
+            return None, f"Failed to process request: {str(e)}"
     try:
         # Extract content_ids from params
+        content_ids, error = await retrieve_content_ids(params["content_id"])
+        if error:
+            return json.dumps({"error": error})
 
-        content_ids = await retrieve_content_ids(params["content_id"])
-        # Validate content_ids
+        # Since we know content_ids is either a list or None at this point,
+        # and error was None (we checked above), we can safely assert it's a list
+        assert content_ids is not None, "content_ids should not be None when error is None"
+        
         if not content_ids:
-            return json.dumps({"error": "content_ids list is required and cannot be empty"})
+            return json.dumps({"error": "content_ids list cannot be empty"})
         if not isinstance(content_ids, list):
             return json.dumps({"error": "content_ids must be a list"})
         for content_id in content_ids:
@@ -355,9 +356,16 @@ async def read_diksha_content(params: dict) -> str:
             except Exception as e:
                 print(f"⚠️ Error with {content_id}: {str(e)}")
 
-        # Create async session and process all content IDs concurrently
+        # Create a semaphore to limit concurrent requests
+        semaphore = asyncio.Semaphore(20)  # Limit to 20 concurrent requests
+
+        async def fetch_with_limit(session: aiohttp.ClientSession, content_id: str) -> None:
+            async with semaphore:  # Acquire and release semaphore automatically
+                await fetch_and_filter(session, content_id)
+
+        # Create async session and process all content IDs with concurrency limit
         async with aiohttp.ClientSession() as session:
-            tasks = [fetch_and_filter(session, content_id) for content_id in content_ids]
+            tasks = [fetch_with_limit(session, content_id) for content_id in content_ids]
             await asyncio.gather(*tasks)
 
         # Return the list of artifact URLs
