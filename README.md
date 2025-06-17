@@ -1,6 +1,5 @@
 # DIKSHA Content Search MCP Server
 
-![DIKSHA Logo](https://diksha.gov.in/assets/images/logo.svg)
 
 A Model Context Protocol (MCP) server for searching and accessing educational content from DIKSHA, India's national digital infrastructure for school education.
 
@@ -72,7 +71,6 @@ diksha_mcp/
 
 ## 🙏 Acknowledgments
 
-- DIKSHA Team
 - Sunbird Community
 - MCP Community
 
