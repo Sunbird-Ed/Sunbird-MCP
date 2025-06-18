@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
     "mcp==1.4.1"
 ]
-// Optional dependencies
+# Optional dependencies
 [project.optional-dependencies]
 dev = ["debugpy==1.8.8"]
-//File is default taken from the AI toolkit vscode extension
+#File is default taken from the AI toolkit vscode extension
