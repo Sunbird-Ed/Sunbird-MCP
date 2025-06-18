@@ -201,9 +201,11 @@ async def search_diksha_content(search_params: dict) -> str:
 
         # Make async request to DIKSHA API
         async with aiohttp.ClientSession() as session:
++            timeout = aiohttp.ClientTimeout(total=15)
             async with session.post(
                 "https://diksha.gov.in/api/content/v1/search",
                 json=request_body,
++               timeout=timeout,
             ) as response:
                 if response.status == 200:
                     data = await response.json()
