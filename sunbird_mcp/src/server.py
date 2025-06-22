@@ -12,12 +12,23 @@ Key Features:
 """
 
 import json
+import logging
 import aiohttp
 import re
 import asyncio
 from typing import Dict, Any, List, Optional
 from mcp.server.fastmcp import FastMCP
 from config import settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server with a unique identifier for this service
 server = FastMCP("sunbird_mcp")
@@ -121,11 +132,6 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
                 "se_gradeLevels": ["Class 12"]
             }
         }
-    
-
-    Args:
-        search_params: Dictionary containing search parameters, e.g., filters, limit, query, sort_by, fields, facets.
-
     Example input:
         {search_params: {
             "filters": {
@@ -201,21 +207,21 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
-                        x={}
+                        book_list={}
                         i=0
                         for content in data.get("result", {}).get("content", []):
                             # Ensure 'leafNodes' is present in each content item
-                            y={}
-                            y["name"] = content.get("name", "")
-                            y["identifier"]= content.get("identifier", [])
-                            y["se_subjects"] = content.get("se_subjects", [])
-                            y["se_mediums"] = content.get("se_mediums", [])
-                            y["se_boards"] = content.get("se_boards", [])
-                            y["se_gradeLevels"] = content.get("se_gradeLevels", [])
+                            book_details={}
+                            book_details["name"] = content.get("name", "")
+                            book_details["identifier"]= content.get("identifier", [])
+                            book_details["se_subjects"] = content.get("se_subjects", [])
+                            book_details["se_mediums"] = content.get("se_mediums", [])
+                            book_details["se_boards"] = content.get("se_boards", [])
+                            book_details["se_gradeLevels"] = content.get("se_gradeLevels", [])
                             book_number=f"book_{i+1}"
                             i+=1
-                            x[book_number]=y
-                        return json.dumps(x, ensure_ascii=False)
+                            book_list[book_number]=book_details
+                        return json.dumps(book_list, ensure_ascii=False)
                     else:
                         error_data = await response.text()
                         return json.dumps({
@@ -253,15 +259,7 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
             "count": 1,
             "message": "Successfully retrieved artifact URLs for non-ECML content"
         }
-    
-
-    Args:
-        params:dictionary containing a content ID.
-            Example: {"content_id":"do_31400742839137075217260"}
-
-    Returns:
-        JSON string containing a list of artifact URLs for content items where mimeType is not 'application/vnd.ekstep.ecml-archive',
-        or an error message.
+    Example Input: {"content_id":"do_31400742839137075217260"}
     """
     async def retrieve_content_ids(content_id: str) -> tuple[list[str] | None, str | None]:
         """
@@ -338,7 +336,7 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
                 This function modifies the artifact_urls list in the parent scope.
             """
             try:
-                api_url = f"https://diksha.gov.in/api/content/v1/read/{content_id}"
+                api_url = f"{settings.API_BASE_URL.rstrip('/')}{CONTENT_ENDPOINT}/{content_id}"
                 async with session.get(api_url) as response:
                     if response.status == 200:
                         data = await response.json()
@@ -346,9 +344,9 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
                         if content.get("mimeType") != excluded_mime and content.get("mimeType") == "application/pdf" and content.get("streamingUrl"):
                             artifact_urls.append(content.get("streamingUrl"))
                     else:
-                        print(f"⚠️ Error with {content_id}: API returned status {response.status}")
+                        logger.warning(f"Error with {content_id}: API returned status {response.status}")
             except Exception as e:
-                print(f"⚠️ Error with {content_id}: {str(e)}")
+                logger.error(f"Error with {content_id}: {str(e)}", exc_info=True)
 
         # Create a semaphore to limit concurrent requests
         semaphore = asyncio.Semaphore(20)  # Limit to 20 concurrent requests

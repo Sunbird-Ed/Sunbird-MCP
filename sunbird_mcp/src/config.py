@@ -1,7 +1,7 @@
 """Configuration settings for the Sunbird MCP Server."""
 import os
 from typing import Dict, List, Any, Optional, Literal
-from pydantic import Field, HttpUrl, validator, Field
+from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings
 from pydantic.networks import AnyHttpUrl
 
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     
     # API Configuration
     API_BASE_URL: str = Field(
-        default="https://diksha.gov.in",
+        default="https://diksha.gov.in",#This is the base url for the sunbird api
         env="SUNBIRD_API_BASE_URL",
         description="Base URL for the Sunbird API (without trailing slash)",
         min_length=1
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
         description="Endpoint for reading content details"
     )
     
-    @validator('API_BASE_URL')
+    @field_validator('API_BASE_URL')
     def validate_api_base_url(cls, v):
         """Ensure the API base URL doesn't end with a slash."""
         if isinstance(v, str):

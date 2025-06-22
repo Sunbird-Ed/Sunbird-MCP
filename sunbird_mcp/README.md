@@ -19,7 +19,7 @@ This is an MCP Server in Python implementing Sunbird content search tools. It pr
 ## Suggested System Prompt to start with
 You are a Resource Finder for learners, utilize the tools:
 You can ask for follow up questions if necessary
-
+```
 1.search_sunbird_content to find the required resources 
 VALID_FILTERS = {
     "primaryCategory": [
@@ -40,6 +40,7 @@ VALID_FILTERS = {
   "Computer Applications","Art & Cultural Education - Music","Drawing"
 ]
 }
+```
 
 
 VALID_FIELDS = [
