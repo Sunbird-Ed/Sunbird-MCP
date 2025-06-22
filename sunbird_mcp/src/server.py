@@ -16,7 +16,7 @@ import logging
 import aiohttp
 import re
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union, Tuple
 from mcp.server.fastmcp import FastMCP
 from config import settings
 
@@ -261,7 +261,6 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
         }
     Example Input: {"content_id":"do_31400742839137075217260"}
     """
-from typing import Dict, Any, List, Optional, Union, Tuple
 
     async def retrieve_content_ids(content_id: str) -> Tuple[Optional[List[str]], Optional[str]]:
         """
