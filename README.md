@@ -1,11 +1,10 @@
-# DIKSHA Content Search MCP Server
+# Sunbird Content Search MCP Server
 
-
-A Model Context Protocol (MCP) server for searching and accessing educational content from DIKSHA, India's national digital infrastructure for school education.
+A Model Context Protocol (MCP) server for searching and accessing educational content from Sunbird, an open-source digital infrastructure for education.
 
 ## 🌟 Overview
 
-The DIKSHA Content Search MCP Server provides search and content retrieval capabilities for DIKSHA's educational resources. This server implements the Model Context Protocol (MCP) standard to enable integration with educational platforms.
+The Sunbird Content Search MCP Server provides search and content retrieval capabilities for Sunbird's educational resources. This server implements the Model Context Protocol (MCP) standard to enable integration with educational platforms.
 
 ## 🎯 Key Features
 
@@ -27,7 +26,7 @@ The DIKSHA Content Search MCP Server provides search and content retrieval capab
 1. **Clone the repository**
    ```bash
    git clone https://github.com/sunbird-ed/sunbird-mcp.git
-   cd sunbird-mcp/diksha_mcp
+   cd sunbird-mcp/sunbird_mcp
    ```
 
 2. **Set up the environment**
@@ -48,17 +47,18 @@ The DIKSHA Content Search MCP Server provides search and content retrieval capab
    # Or using pip
    pip install -e .[dev]
    ```
-
+    
 4. **Start the server**
+   Go to to sunbird_mcp/src and run the following
    ```bash
-   python -m diksha_mcp.src.server
+   python -m __init__ sse
    ```
 
 ## 🛠️ Development
 
 ### Directory Structure
 ```
-diksha_mcp/
+sunbird_mcp/
 ├── .vscode/         # VSCode configuration
 ├── inspector/       # MCP Inspector files
 ├── src/             # Source code
@@ -76,4 +76,4 @@ diksha_mcp/
 
 ---
 
-Built for the DIKSHA ecosystem
+Built for the Sunbird ecosystem

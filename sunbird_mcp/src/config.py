@@ -1,0 +1,116 @@
+"""Configuration settings for the Sunbird MCP Server."""
+import os
+from typing import Dict, List, Any, Optional, Literal
+from pydantic import Field, HttpUrl, validator, Field
+from pydantic_settings import BaseSettings
+from pydantic.networks import AnyHttpUrl
+
+class Settings(BaseSettings):
+    """Application settings and configuration."""
+    
+    # API Configuration
+    API_BASE_URL: str = Field(
+        default="https://diksha.gov.in",
+        env="SUNBIRD_API_BASE_URL",
+        description="Base URL for the Sunbird API (without trailing slash)",
+        min_length=1
+    )
+    
+    # API Endpoints
+    API_ENDPOINT_SEARCH: str = Field(
+        default="/api/content/v1/search",
+        env="SUNBIRD_API_ENDPOINT_SEARCH",
+        description="Endpoint for searching content"
+    )
+    
+    API_ENDPOINT_READ: str = Field(
+        default="/api/content/v1/read",
+        env="SUNBIRD_API_ENDPOINT_READ",
+        description="Endpoint for reading content details"
+    )
+    
+    @validator('API_BASE_URL')
+    def validate_api_base_url(cls, v):
+        """Ensure the API base URL doesn't end with a slash."""
+        if isinstance(v, str):
+            return v.rstrip('/')
+        return v
+    
+    # Search Configuration
+    DEFAULT_LIMIT: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        env="SUNBIRD_DEFAULT_LIMIT",
+        description="Default number of search results to return"
+    )
+    
+    MAX_LIMIT: int = Field(
+        default=100,
+        ge=1,
+        le=1000,
+        env="SUNBIRD_MAX_LIMIT",
+        description="Maximum number of search results allowed per request"
+    )
+    
+    # Timeout settings
+    REQUEST_TIMEOUT: int = Field(
+        default=30,
+        gt=0,
+        env="SUNBIRD_REQUEST_TIMEOUT",
+        description="Timeout in seconds for API requests"
+    )
+    
+    # Content Types and Filters
+    CONTENT_FILTERS: Dict[str, List[str]] = Field(
+        default_factory=lambda: {
+            "primaryCategory": [
+                "Collection", "Resource", "Content Playlist", "Course", "Course Assessment",
+                "Digital Textbook", "eTextbook", "Explanation Content", "Learning Resource",
+                "Practice Question Set", "Teacher Resource", "Textbook Unit", "LessonPlan",
+                "FocusSpot", "Learning Outcome Definition", "Curiosity Questions",
+                "MarkingSchemeRubric", "ExplanationResource", "ExperientialResource",
+                "Practice Resource", "TVLesson", "Question paper"
+            ],
+            "visibility": ["Default", "Parent"],
+            "se_boards": ["CBSE", "State (Andhra Pradesh)"],
+            "se_gradeLevels": [f"Class {i}" for i in range(1, 13)],
+            "se_mediums": ["English", "Hindi"],
+            "se_subjects": [
+                "Kannada", "English", "Hindi", "Mathematics", "Physical Science", "Biology",
+                "History", "Geography", "Civics", "Economics", "Environmental Studies",
+                "Health & Physical Education", "Computer Applications",
+                "Art & Cultural Education - Music", "Drawing"
+            ],
+            "audience": ["Student", "Teacher"]
+        },
+        description="Valid content filters and their allowed values"
+    )
+    
+    # Fields Configuration
+    DEFAULT_FIELDS: List[str] = Field(
+        default_factory=lambda: [
+            "name", "appIcon", "mimeType", "gradeLevel", "identifier", "medium", "pkgVersion",
+            "board", "subject", "resourceType", "primaryCategory", "contentType", "channel",
+            "organisation", "trackable", "se_boards", "se_subjects", "se_mediums", "se_gradeLevels",
+            "me_averageRating", "me_totalRatingsCount", "me_totalPlaySessionCount"
+        ],
+        description="Default fields to include in search results"
+    )
+    
+    # Validation Settings
+    ENABLE_INPUT_VALIDATION: bool = Field(
+        default=True,
+        env="SUNBIRD_ENABLE_VALIDATION",
+        description="Enable/disable input validation"
+    )
+    
+    # Add any other configuration parameters here
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = 'utf-8'
+        case_sensitive = False
+
+# Create settings instance
+settings = Settings()

@@ -1,12 +1,12 @@
-# DIKSHA Content Search MCP Server
+# Sunbird Content Search MCP Server
 
-This is an MCP Server in Python implementing DIKSHA content search tools. It provides the following features:
+This is an MCP Server in Python implementing Sunbird content search tools. It provides the following features:
 
-- **Search DIKSHA Content**: A tool that searches DIKSHA's educational content based on various filters and parameters
-- **Read DIKSHA Content**: A tool that retrieves artifact URLs for books by their content ID
+- **Search Sunbird Content**: A tool that searches Sunbird's educational content based on various filters and parameters
+- **Read Sunbird Content**: A tool that retrieves artifact URLs for books by their content ID
 - **Debug in [MCP Inspector](https://github.com/modelcontextprotocol/inspector)**: A feature that allows you to debug the MCP Server using the MCP Inspector
 
-## Get started with the DIKSHA Search MCP Server
+## Get started with the Sunbird Search MCP Server
 
 > **Prerequisites**
 >
@@ -17,9 +17,10 @@ This is an MCP Server in Python implementing DIKSHA content search tools. It pro
 > - [Python Debugger Extension](https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy)
 
 ## Suggested System Prompt to start with
-You are a Resource Finder for learners ,utilize the tools:
+You are a Resource Finder for learners, utilize the tools:
+You can ask for follow up questions if necessary
 
-1.search_diksha_content to find the required resources 
+1.search_sunbird_content to find the required resources 
 VALID_FILTERS = {
     "primaryCategory": [
         "Digital Textbook", "eTextbook",
@@ -32,8 +33,12 @@ VALID_FILTERS = {
         "Class 11", "Class 12"
     ],
     "se_mediums": ["English", "Hindi"],
-    "subject": ["Physical Science", "Mathematics"],
-    "audience": ["Student", "Teacher"]
+"se_subjects"=[
+  "Kannada","English","Hindi","Mathematics",
+  "Physical Science","Biology","History","Geography","Civics",
+  "Economics","Environmental Studies","Health & Physical Education",
+  "Computer Applications","Art & Cultural Education - Music","Drawing"
+]
 }
 
 
@@ -47,10 +52,11 @@ VALID_FIELDS = [
 
 VALID_FACETS = ["se_boards", "se_gradeLevels", "se_subjects", "se_mediums", "primaryCategory"]
 
+After finding the relevant books, present the book names and document identifiers so that user can select which book he wants for further content link extraction 
 
-2.read_diksha_tool
-Read Diksha tool finds and retrieves the pdf links(streaming urls) to give to user based on content id given
-the input needed by read_diksha_tool is {content_id:"content id here"}
+2.read_sunbird_tool
+Read sunbirdtool finds and retrieves the pdf links(streaming urls) to give to user based on content id given
+the input needed by read_sunbird_tool is {content_id:"content id here"}
 
 
 
@@ -67,8 +73,8 @@ There are two approaches to set up the environment for this project. You can cho
 
 ## Available Tools
 
-### 1. Search DIKSHA Content
-Searches for DIKSHA content based on various filters and parameters. Supports:
+### 1. Search Sunbird Content
+Searches for Sunbird content based on various filters and parameters. Supports:
 - Primary category filtering (Digital Textbook, Course, etc.)
 - Board filtering (CBSE, State boards)
 - Grade level filtering (Class 1-12)
@@ -76,7 +82,7 @@ Searches for DIKSHA content based on various filters and parameters. Supports:
 - Subject filtering
 - Audience filtering (Student, Teacher)
 
-### 2. Read DIKSHA Content
+### 2. Read Sunbird Content
 Retrieves artifact URLs for books by their content ID:
 - Extracts content IDs from books
 - Filters out ECML content
@@ -88,9 +94,9 @@ Retrieves artifact URLs for books by their content ID:
 | ------------ | -------------------------------------------- |
 | `.vscode`    | VSCode files for debugging                   |
 | `.aitk`      | Configurations for AI Toolkit                |
-| `src`        | The source code for the DIKSHA search server |
+| `src`        | The source code for the Sunbird search server |
 
-## How to debug the DIKSHA Search MCP Server
+## How to debug the Sunbird Search MCP Server
 
 The same debugging options as before remain available: Using .vscode is highly useful
 - Debug in Agent Builder

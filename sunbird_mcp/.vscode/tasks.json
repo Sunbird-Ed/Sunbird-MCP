@@ -83,7 +83,7 @@
       "type": "command",
       "command": "ai-mlstudio.agentBuilder",
       "args": {
-        "initialMCPs": [ "local-server-trial_1" ],
+        "initialMCPs": [ "sunbird_mcp" ],
         "triggeredFrom": "vsc-tasks"
       }
     },
