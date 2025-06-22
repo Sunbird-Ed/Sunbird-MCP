@@ -261,7 +261,9 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
         }
     Example Input: {"content_id":"do_31400742839137075217260"}
     """
-    async def retrieve_content_ids(content_id: str) -> tuple[list[str] | None, str | None]:
+from typing import Dict, Any, List, Optional, Union, Tuple
+
+    async def retrieve_content_ids(content_id: str) -> Tuple[Optional[List[str]], Optional[str]]:
         """
         Helper function to retrieve leaf node content IDs for a given content ID.
         
