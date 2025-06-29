@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     )
     
     @field_validator('API_BASE_URL')
+    @classmethod
     def validate_api_base_url(cls, v):
         """Ensure the API base URL doesn't end with a slash."""
         if isinstance(v, str):
