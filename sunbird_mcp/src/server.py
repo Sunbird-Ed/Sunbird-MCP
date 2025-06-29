@@ -14,7 +14,6 @@ Key Features:
 import json
 import logging
 import aiohttp
-import re
 import asyncio
 from typing import Dict, Any, List, Optional
 from mcp.server.fastmcp import FastMCP
@@ -34,13 +33,13 @@ logger = logging.getLogger(__name__)
 server = FastMCP("sunbird_mcp")
 
 # Define constants for API endpoints
-SEARCH_ENDPOINT = "/api/content/v1/search"
-CONTENT_ENDPOINT = "/api/content/v1/read"
+SEARCH_ENDPOINT = settings.API_ENDPOINT_SEARCH
+CONTENT_ENDPOINT = settings.API_ENDPOINT_READ
 
 # Get valid filters and fields from settings
 VALID_FILTERS = settings.CONTENT_FILTERS
 VALID_FIELDS = settings.DEFAULT_FIELDS
-VALID_FACETS = ["se_boards", "se_gradeLevels", "se_subjects", "se_mediums", "primaryCategory"]
+VALID_FACETS = settings.VALID_FACETS
 
 def validate_filters(filters: Dict[str, Any]) -> List[str]:
     """
@@ -208,18 +207,18 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
                     if response.status == 200:
                         data = await response.json()
                         book_list={}
-                        i=0
+                        index=0
                         for content in data.get("result", {}).get("content", []):
                             # Ensure 'leafNodes' is present in each content item
                             book_details={}
                             book_details["name"] = content.get("name", "")
-                            book_details["identifier"]= content.get("identifier", [])
+                            book_details["identifier"]= content.get("identifier", "")
                             book_details["se_subjects"] = content.get("se_subjects", [])
                             book_details["se_mediums"] = content.get("se_mediums", [])
                             book_details["se_boards"] = content.get("se_boards", [])
                             book_details["se_gradeLevels"] = content.get("se_gradeLevels", [])
-                            book_number=f"book_{i+1}"
-                            i+=1
+                            book_number=f"book_{index+1}"
+                            index+=1
                             book_list[book_number]=book_details
                         return json.dumps(book_list, ensure_ascii=False)
                     else:
@@ -304,8 +303,8 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
         if not isinstance(content_id, str) or not content_id.strip():
             return json.dumps({"error": "content_id must be a non-empty string"}, ensure_ascii=False)
             
-        if not content_id.startswith("do_"):
-            return json.dumps({"error": "content_id must start with 'do_'"}, ensure_ascii=False)
+        if not content_id.startswith(settings.CONTENT_ID_PREFIX):
+            return json.dumps({"error": f"content_id must start with '{settings.CONTENT_ID_PREFIX}'"}, ensure_ascii=False)
             
         # Extract content_ids from the API
         content_ids, error = await retrieve_content_ids(content_id)
@@ -319,8 +318,8 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
         if not isinstance(content_ids, list):
             return json.dumps({"error": "Unexpected response format: content_ids is not a list"}, ensure_ascii=False)
 
-        # Define excluded MIME type
-        excluded_mime = "application/vnd.ekstep.ecml-archive"
+        # Define excluded MIME type from config
+        excluded_mime = settings.EXCLUDED_MIME_TYPE
         artifact_urls = []
 
         # Internal helper function to process individual content items asynchronously
@@ -341,7 +340,7 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
                     if response.status == 200:
                         data = await response.json()
                         content = data.get("result", {}).get("content", {})
-                        if content.get("mimeType") != excluded_mime and content.get("mimeType") == "application/pdf" and content.get("streamingUrl"):
+                        if content.get("mimeType") != excluded_mime and content.get("mimeType") == settings.PDF_MIME_TYPE and content.get("streamingUrl"):
                             artifact_urls.append(content.get("streamingUrl"))
                     else:
                         logger.warning(f"Error with {content_id}: API returned status {response.status}")

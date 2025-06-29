@@ -1,9 +1,7 @@
 """Configuration settings for the Sunbird MCP Server."""
-import os
-from typing import Dict, List, Any, Optional, Literal
-from pydantic import Field, HttpUrl, field_validator
+from typing import Dict, List
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
-from pydantic.networks import AnyHttpUrl
 
 class Settings(BaseSettings):
     """Application settings and configuration."""
@@ -96,6 +94,28 @@ class Settings(BaseSettings):
             "me_averageRating", "me_totalRatingsCount", "me_totalPlaySessionCount"
         ],
         description="Default fields to include in search results"
+    )
+
+    # Facets Configuration
+    VALID_FACETS: List[str] = Field(
+        default_factory=lambda: [
+            "se_boards", "se_gradeLevels", "se_subjects", "se_mediums", "primaryCategory"
+        ],
+        description="Default facets available for search and filtering"
+    )
+
+    # MIME Types and Content ID Prefix
+    PDF_MIME_TYPE: str = Field(
+        default="application/pdf",
+        description="MIME type for PDF content"
+    )
+    EXCLUDED_MIME_TYPE: str = Field(
+        default="application/vnd.ekstep.ecml-archive",
+        description="MIME type to exclude (e.g., ECML format)"
+    )
+    CONTENT_ID_PREFIX: str = Field(
+        default="do_",
+        description="Prefix for valid SUNBIRD content IDs"
     )
     
     # Validation Settings
