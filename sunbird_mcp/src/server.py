@@ -15,7 +15,7 @@ import json
 import logging
 import aiohttp
 import asyncio
-from typing import Dict, Any, List, Optional, Union, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 from mcp.server.fastmcp import FastMCP
 from config import settings
 
