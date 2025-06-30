@@ -101,6 +101,55 @@ def validate_fields_and_facets(fields: Optional[List[str]], facets: Optional[Lis
     return errors
 
 
+def _build_search_payload(filters, fields, facets, limit, offset, query, sort_by):
+    """Build the API request payload for Sunbird content search."""
+    payload = {
+        "request": {
+            "filters": filters,
+            "limit": limit,
+            "offset": offset,
+            "query": query,
+            "sort_by": sort_by,
+            "fields": fields
+        }
+    }
+    if facets:
+        payload["request"]["facets"] = facets
+    return payload
+
+async def _execute_search_request(api_url: str, payload: dict) -> str:
+    """Execute the search API request and process the results."""
+    try:
+        timeout = aiohttp.ClientTimeout(total=settings.REQUEST_TIMEOUT)
+        async with aiohttp.ClientSession(timeout=timeout) as session, \
+                   session.post(
+                       api_url,
+                       json=payload,
+                       headers={"Content-Type": "application/json"}
+                   ) as response:
+            if response.status == 200:
+                data = await response.json()
+                return _process_search_results(data)
+            error_data = await response.text()
+            return json.dumps({"error": f"Sunbird API request failed with status {response.status}: {error_data}"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": "Failed to process request", "details": str(e)}, ensure_ascii=False)
+
+def _process_search_results(data: dict) -> str:
+    """Process and format the search results from the Sunbird API."""
+    book_list = {}
+    for index, content in enumerate(data.get("result", {}).get("content", [])):
+        book_details = {}
+        book_details["name"] = content.get("name", "")
+        book_details["identifier"] = content.get("identifier", "")
+        book_details["se_subjects"] = content.get("se_subjects", [])
+        book_details["se_mediums"] = content.get("se_mediums", [])
+        book_details["se_boards"] = content.get("se_boards", [])
+        book_details["se_gradeLevels"] = content.get("se_gradeLevels", [])
+        book_number = f"book_{index+1}"
+        book_list[book_number] = book_details
+    return json.dumps(book_list, ensure_ascii=False)
+
 # Existing search_sunbird_content tool (unchanged, using dict input as per previous correction)
 @server.tool()
 async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
@@ -171,7 +220,7 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
         if error_response:
             return json.dumps(error_response, ensure_ascii=False)
 
-        # Set up request parameters with defaults and configured limits
+        # Build payload and URL using helpers
         limit = min(
             int(search_params.get("limit", settings.DEFAULT_LIMIT)),
             settings.MAX_LIMIT
@@ -179,54 +228,12 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
         offset = int(search_params.get("offset", 0))
         query = search_params.get("query", "")
         sort_by = search_params.get("sort_by", {"lastPublishedOn": "desc"})
-
-        # Build request payload
-        payload = {
-            "request": {
-                "filters": filters,
-                "limit": limit,
-                "offset": offset,
-                "query": query,
-                "sort_by": sort_by,
-                "fields": fields
-            }
-        }
-        if facets:
-            payload["request"]["facets"] = facets
-
+        payload = _build_search_payload(filters, fields, facets, limit, offset, query, sort_by)
         # Build API URL
         api_url = f"{settings.API_BASE_URL.rstrip('/')}{SEARCH_ENDPOINT}"
 
         # Make API request with timeout
-        try:
-            timeout = aiohttp.ClientTimeout(total=settings.REQUEST_TIMEOUT)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    api_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"}
-                ) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        book_list = {}
-                        for index, content in enumerate(data.get("result", {}).get("content", [])):
-                            # Ensure 'leafNodes' is present in each content item
-                            book_details = {}
-                            book_details["name"] = content.get("name", "")
-                            book_details["identifier"] = content.get("identifier", "")
-                            book_details["se_subjects"] = content.get("se_subjects", [])
-                            book_details["se_mediums"] = content.get("se_mediums", [])
-                            book_details["se_boards"] = content.get("se_boards", [])
-                            book_details["se_gradeLevels"] = content.get("se_gradeLevels", [])
-                            book_number = f"book_{index+1}"
-                            book_list[book_number] = book_details
-                        return json.dumps(book_list, ensure_ascii=False)
-                    # Only reach here if not 200
-                    error_data = await response.text()
-                    return json.dumps({"error": f"Sunbird API request failed with status {response.status}: {error_data}"}, ensure_ascii=False)
-        except Exception as e:
-            return json.dumps({"error": "Failed to process request", "details": str(e)}, ensure_ascii=False)
-
+        return await _execute_search_request(api_url, payload)
     except Exception as e:
         return json.dumps({"error": "Failed to process request", "details": str(e)}, ensure_ascii=False)
 
@@ -259,7 +266,60 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
     Example Input: {"content_id":"do_31400742839137075217260"}
     """
 
-    async def retrieve_content_ids(content_id: str) -> Tuple[Optional[List[str]], Optional[str]]:
+    try:
+        # Validate input parameters
+        if not isinstance(params, dict) or "content_id" not in params:
+            return json.dumps({"error": "content_id is required"}, ensure_ascii=False)
+            
+        content_id = params["content_id"]
+        if not isinstance(content_id, str) or not content_id.strip():
+            return json.dumps({"error": "content_id must be a non-empty string"}, ensure_ascii=False)
+            
+        if not content_id.startswith(settings.CONTENT_ID_PREFIX):
+            return json.dumps({"error": f"content_id must start with '{settings.CONTENT_ID_PREFIX}'"}, ensure_ascii=False)
+            
+        # Extract content_ids from the API
+        content_ids, error = await retrieve_content_ids(content_id)
+        if error:
+            return json.dumps({"error": error}, ensure_ascii=False)
+
+        # Validate the returned content_ids
+        if not content_ids:
+            return json.dumps({"error": "No content IDs found for the given content_id"}, ensure_ascii=False)
+            
+        if not isinstance(content_ids, list):
+            return json.dumps({"error": "Unexpected response format: content_ids is not a list"}, ensure_ascii=False)
+
+        
+        artifact_urls = []
+
+        # Create a semaphore to limit concurrent requests
+        semaphore = asyncio.Semaphore(20)  # Limit to 20 concurrent requests
+
+
+        # Create async session and process all content IDs with concurrency limit
+        async with aiohttp.ClientSession() as session:
+            await run_concurrent_fetches(session, content_ids, fetch_and_filter, limit=20)
+
+        # Return the list of artifact URLs
+        return json.dumps({
+            "artifact_urls": artifact_urls,
+            "count": len(artifact_urls),
+            "message": "Successfully retrieved artifact URLs for non-ECML content"
+        }, ensure_ascii=False)
+
+    except Exception as e:
+        return json.dumps({"error": "Failed to process request", "details": str(e)})
+
+async def run_concurrent_fetches(session, content_ids, fetch_and_filter, limit=20):
+    semaphore = asyncio.Semaphore(limit)
+    async def fetch_with_limit(content_id):
+        async with semaphore:
+            await fetch_and_filter(session, content_id)
+    tasks = [fetch_with_limit(content_id) for content_id in content_ids]
+    await asyncio.gather(*tasks)
+
+async def retrieve_content_ids(content_id: str) -> Tuple[Optional[List[str]], Optional[str]]:
         """
         Helper function to retrieve leaf node content IDs for a given content ID.
         
@@ -288,41 +348,12 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
                     if response.status == 200:
                         data = await response.json()
                         return data["result"]["content"]["leafNodes"], None
-                    else:
-                        error_data = await response.text()
-                        return None, f"Sunbird API request failed with status {response.status}: {error_data}"
+                    error_data = await response.text()
+                    return None, f"Sunbird API request failed with status {response.status}: {error_data}"
         except Exception as e:
             return None, f"Failed to process request: {str(e)}"
-    try:
-        # Validate input parameters
-        if not isinstance(params, dict) or "content_id" not in params:
-            return json.dumps({"error": "content_id is required"}, ensure_ascii=False)
-            
-        content_id = params["content_id"]
-        if not isinstance(content_id, str) or not content_id.strip():
-            return json.dumps({"error": "content_id must be a non-empty string"}, ensure_ascii=False)
-            
-        if not content_id.startswith(settings.CONTENT_ID_PREFIX):
-            return json.dumps({"error": f"content_id must start with '{settings.CONTENT_ID_PREFIX}'"}, ensure_ascii=False)
-            
-        # Extract content_ids from the API
-        content_ids, error = await retrieve_content_ids(content_id)
-        if error:
-            return json.dumps({"error": error}, ensure_ascii=False)
-
-        # Validate the returned content_ids
-        if not content_ids:
-            return json.dumps({"error": "No content IDs found for the given content_id"}, ensure_ascii=False)
-            
-        if not isinstance(content_ids, list):
-            return json.dumps({"error": "Unexpected response format: content_ids is not a list"}, ensure_ascii=False)
-
-        # Define excluded MIME type from config
-        excluded_mime = settings.EXCLUDED_MIME_TYPE
-        artifact_urls = []
-
-        # Internal helper function to process individual content items asynchronously
-        async def fetch_and_filter(session, content_id):
+    
+async def fetch_and_filter(session, content_id):
             """
             Fetch content metadata and filter for PDF artifacts.
             
@@ -339,35 +370,14 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
                     if response.status == 200:
                         data = await response.json()
                         content = data.get("result", {}).get("content", {})
+                        # Define excluded MIME type from config
+                        excluded_mime = settings.EXCLUDED_MIME_TYPE
                         if content.get("mimeType") != excluded_mime and content.get("mimeType") == settings.PDF_MIME_TYPE and content.get("streamingUrl"):
                             artifact_urls.append(content.get("streamingUrl"))
                     else:
                         logger.warning(f"Error with {content_id}: API returned status {response.status}")
             except Exception as e:
                 logger.error(f"Error with {content_id}: {str(e)}", exc_info=True)
-
-        # Create a semaphore to limit concurrent requests
-        semaphore = asyncio.Semaphore(20)  # Limit to 20 concurrent requests
-
-        async def fetch_with_limit(session: aiohttp.ClientSession, content_id: str) -> None:
-            async with semaphore:  # Acquire and release semaphore automatically
-                await fetch_and_filter(session, content_id)
-
-        # Create async session and process all content IDs with concurrency limit
-        async with aiohttp.ClientSession() as session:
-            tasks = [fetch_with_limit(session, content_id) for content_id in content_ids]
-            await asyncio.gather(*tasks)
-
-        # Return the list of artifact URLs
-        return json.dumps({
-            "artifact_urls": artifact_urls,
-            "count": len(artifact_urls),
-            "message": "Successfully retrieved artifact URLs for non-ECML content"
-        }, ensure_ascii=False)
-
-    except Exception as e:
-        return json.dumps({"error": "Failed to process request", "details": str(e)})
-
 
 # # Run the server
 # if __name__ == "__main__":

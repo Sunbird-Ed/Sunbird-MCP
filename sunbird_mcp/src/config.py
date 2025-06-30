@@ -3,6 +3,38 @@ from typing import Dict, List
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
+import os
+import json as _json
+
+def load_default_filters():
+    env_json = os.environ.get("SUNBIRD_CONTENT_FILTERS_JSON")
+    if env_json:
+        try:
+            return _json.loads(env_json)
+        except Exception:
+            pass  # fallback to default
+    return {
+        "primaryCategory": [
+            "Collection", "Resource", "Content Playlist", "Course", "Course Assessment",
+            "Digital Textbook", "eTextbook", "Explanation Content", "Learning Resource",
+            "Practice Question Set", "Teacher Resource", "Textbook Unit", "LessonPlan",
+            "FocusSpot", "Learning Outcome Definition", "Curiosity Questions",
+            "MarkingSchemeRubric", "ExplanationResource", "ExperientialResource",
+            "Practice Resource", "TVLesson", "Question paper"
+        ],
+        "visibility": ["Default", "Parent"],
+        "se_boards": ["CBSE", "State (Andhra Pradesh)"],
+        "se_gradeLevels": [f"Class {i}" for i in range(1, 13)],
+        "se_mediums": ["English", "Hindi"],
+        "se_subjects": [
+            "Kannada", "English", "Hindi", "Mathematics", "Physical Science", "Biology",
+            "History", "Geography", "Civics", "Economics", "Environmental Studies",
+            "Health & Physical Education", "Computer Applications",
+            "Art & Cultural Education - Music", "Drawing"
+        ],
+        "audience": ["Student", "Teacher"]
+    }
+
 
 class Settings(BaseSettings):
     """Application settings and configuration."""
@@ -62,30 +94,13 @@ class Settings(BaseSettings):
     )
     
     # Content Types and Filters
+    # Content filters can be extended via environment variables or external config
     CONTENT_FILTERS: Dict[str, List[str]] = Field(
-        default_factory=lambda: {
-            "primaryCategory": [
-                "Collection", "Resource", "Content Playlist", "Course", "Course Assessment",
-                "Digital Textbook", "eTextbook", "Explanation Content", "Learning Resource",
-                "Practice Question Set", "Teacher Resource", "Textbook Unit", "LessonPlan",
-                "FocusSpot", "Learning Outcome Definition", "Curiosity Questions",
-                "MarkingSchemeRubric", "ExplanationResource", "ExperientialResource",
-                "Practice Resource", "TVLesson", "Question paper"
-            ],
-            "visibility": ["Default", "Parent"],
-            "se_boards": ["CBSE", "State (Andhra Pradesh)"],
-            "se_gradeLevels": [f"Class {i}" for i in range(1, 13)],
-            "se_mediums": ["English", "Hindi"],
-            "se_subjects": [
-                "Kannada", "English", "Hindi", "Mathematics", "Physical Science", "Biology",
-                "History", "Geography", "Civics", "Economics", "Environmental Studies",
-                "Health & Physical Education", "Computer Applications",
-                "Art & Cultural Education - Music", "Drawing"
-            ],
-            "audience": ["Student", "Teacher"]
-        },
+        default_factory=load_default_filters,
+        env="SUNBIRD_CONTENT_FILTERS_JSON",
         description="Valid content filters and their allowed values"
     )
+
     
     # Fields Configuration
     DEFAULT_FIELDS: List[str] = Field(
