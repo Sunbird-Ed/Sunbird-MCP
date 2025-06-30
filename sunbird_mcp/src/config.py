@@ -9,6 +9,7 @@ import json as _json
 import logging
 logger = logging.getLogger(__name__)
 
+
 def load_default_filters():
     env_json = os.environ.get("SUNBIRD_CONTENT_FILTERS_JSON")
     if env_json:
@@ -42,7 +43,6 @@ def load_default_filters():
 
 class Settings(BaseSettings):
     """Application settings and configuration."""
-    
     # API Configuration
     API_BASE_URL: str = Field(
         default="https://diksha.gov.in",  # This is the base url for the sunbird api
@@ -50,20 +50,18 @@ class Settings(BaseSettings):
         description="Base URL for the Sunbird API (without trailing slash)",
         min_length=1
     )
-    
     # API Endpoints
     API_ENDPOINT_SEARCH: str = Field(
         default="/api/content/v1/search",
         env="SUNBIRD_API_ENDPOINT_SEARCH",
         description="Endpoint for searching content"
     )
-    
     API_ENDPOINT_READ: str = Field(
         default="/api/content/v1/read",
         env="SUNBIRD_API_ENDPOINT_READ",
         description="Endpoint for reading content details"
     )
-    
+
     @field_validator('API_BASE_URL')
     @classmethod
     def validate_api_base_url(cls, v):
@@ -71,7 +69,6 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v.rstrip('/')
         return v
-    
     # Search Configuration
     DEFAULT_LIMIT: int = Field(
         default=10,
@@ -80,7 +77,6 @@ class Settings(BaseSettings):
         env="SUNBIRD_DEFAULT_LIMIT",
         description="Default number of search results to return"
     )
-    
     MAX_LIMIT: int = Field(
         default=100,
         ge=1,
@@ -88,7 +84,6 @@ class Settings(BaseSettings):
         env="SUNBIRD_MAX_LIMIT",
         description="Maximum number of search results allowed per request"
     )
-    
     # Timeout settings
     REQUEST_TIMEOUT: int = Field(
         default=30,
@@ -96,7 +91,6 @@ class Settings(BaseSettings):
         env="SUNBIRD_REQUEST_TIMEOUT",
         description="Timeout in seconds for API requests"
     )
-    
     # Content Types and Filters
     # Content filters can be extended via environment variables or external config
     CONTENT_FILTERS: Dict[str, List[str]] = Field(
@@ -105,7 +99,6 @@ class Settings(BaseSettings):
         description="Valid content filters and their allowed values"
     )
 
-    
     # Fields Configuration
     DEFAULT_FIELDS: List[str] = Field(
         default_factory=lambda: [
@@ -138,16 +131,14 @@ class Settings(BaseSettings):
         default="do_",
         description="Prefix for valid SUNBIRD content IDs"
     )
-    
     # Validation Settings
     ENABLE_INPUT_VALIDATION: bool = Field(
         default=True,
         env="SUNBIRD_ENABLE_VALIDATION",
         description="Enable/disable input validation"
     )
-    
+
     # Add any other configuration parameters here
-    
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'
