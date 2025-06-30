@@ -3,12 +3,13 @@ from typing import Dict, List
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     """Application settings and configuration."""
     
     # API Configuration
     API_BASE_URL: str = Field(
-        default="https://diksha.gov.in",#This is the base url for the sunbird api
+        default="https://diksha.gov.in",  # This is the base url for the sunbird api
         env="SUNBIRD_API_BASE_URL",
         description="Base URL for the Sunbird API (without trailing slash)",
         min_length=1
@@ -132,6 +133,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = 'utf-8'
         case_sensitive = False
+
 
 # Create settings instance
 settings = Settings()

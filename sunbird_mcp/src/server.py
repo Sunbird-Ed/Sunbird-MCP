@@ -41,6 +41,7 @@ VALID_FILTERS = settings.CONTENT_FILTERS
 VALID_FIELDS = settings.DEFAULT_FIELDS
 VALID_FACETS = settings.VALID_FACETS
 
+
 def validate_filters(filters: Dict[str, Any]) -> List[str]:
     """
     Validate the provided filters against allowed values.
@@ -70,6 +71,7 @@ def validate_filters(filters: Dict[str, Any]) -> List[str]:
     
     return errors
 
+
 def validate_fields_and_facets(fields: Optional[List[str]], facets: Optional[List[str]]) -> List[str]:
     """
     Validate the requested fields and facets against allowed values.
@@ -97,6 +99,7 @@ def validate_fields_and_facets(fields: Optional[List[str]], facets: Optional[Lis
                 errors.append(f"Invalid facet: {facet}")
     
     return errors
+
 
 # Existing search_sunbird_content tool (unchanged, using dict input as per previous correction)
 @server.tool()
@@ -150,24 +153,24 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
         }}
     """
     try:
-        # Validate input parameters
+        # Validate input parameters and collect errors
+        error_response = None
         if not isinstance(search_params, dict):
-            return json.dumps({"error": "Search parameters must be a dictionary"}, ensure_ascii=False)
-        
-        # Extract and validate filters
-        filters = search_params.get("filters", {})
-        filter_errors = validate_filters(filters)
-        if filter_errors:
-            return json.dumps({"error": "Invalid filters", "details": filter_errors}, ensure_ascii=False)
-        
-        # Validate fields and facets if provided
-        fields = search_params.get("fields", VALID_FIELDS)
-        facets = search_params.get("facets", [])
-        
-        validation_errors = validate_fields_and_facets(fields, facets)
-        if validation_errors:
-            return json.dumps({"error": "Validation error", "details": validation_errors}, ensure_ascii=False)
-        
+            error_response = {"error": "Search parameters must be a dictionary"}
+        else:
+            filters = search_params.get("filters", {})
+            filter_errors = validate_filters(filters)
+            if filter_errors:
+                error_response = {"error": "Invalid filters", "details": filter_errors}
+            else:
+                fields = search_params.get("fields", VALID_FIELDS)
+                facets = search_params.get("facets", [])
+                validation_errors = validate_fields_and_facets(fields, facets)
+                if validation_errors:
+                    error_response = {"error": "Validation error", "details": validation_errors}
+        if error_response:
+            return json.dumps(error_response, ensure_ascii=False)
+
         # Set up request parameters with defaults and configured limits
         limit = min(
             int(search_params.get("limit", settings.DEFAULT_LIMIT)),
@@ -176,7 +179,7 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
         offset = int(search_params.get("offset", 0))
         query = search_params.get("query", "")
         sort_by = search_params.get("sort_by", {"lastPublishedOn": "desc"})
-        
+
         # Build request payload
         payload = {
             "request": {
@@ -188,13 +191,12 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
                 "fields": fields
             }
         }
-        
         if facets:
             payload["request"]["facets"] = facets
-        
+
         # Build API URL
         api_url = f"{settings.API_BASE_URL.rstrip('/')}{SEARCH_ENDPOINT}"
-        
+
         # Make API request with timeout
         try:
             timeout = aiohttp.ClientTimeout(total=settings.REQUEST_TIMEOUT)
@@ -206,32 +208,28 @@ async def search_sunbird_content(search_params: Dict[str, Any]) -> str:
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
-                        book_list={}
-                        index=0
-                        for content in data.get("result", {}).get("content", []):
+                        book_list = {}
+                        for index, content in enumerate(data.get("result", {}).get("content", [])):
                             # Ensure 'leafNodes' is present in each content item
-                            book_details={}
+                            book_details = {}
                             book_details["name"] = content.get("name", "")
-                            book_details["identifier"]= content.get("identifier", "")
+                            book_details["identifier"] = content.get("identifier", "")
                             book_details["se_subjects"] = content.get("se_subjects", [])
                             book_details["se_mediums"] = content.get("se_mediums", [])
                             book_details["se_boards"] = content.get("se_boards", [])
                             book_details["se_gradeLevels"] = content.get("se_gradeLevels", [])
-                            book_number=f"book_{index+1}"
-                            index+=1
-                            book_list[book_number]=book_details
+                            book_number = f"book_{index+1}"
+                            book_list[book_number] = book_details
                         return json.dumps(book_list, ensure_ascii=False)
-                    else:
-                        error_data = await response.text()
-                        return json.dumps({
-                            "error": f"Sunbird API request failed with status {response.status}",
-                            "details": error_data
-                        }, ensure_ascii=False)
+                    # Only reach here if not 200
+                    error_data = await response.text()
+                    return json.dumps({"error": f"Sunbird API request failed with status {response.status}: {error_data}"}, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": "Failed to process request", "details": str(e)}, ensure_ascii=False)
 
     except Exception as e:
         return json.dumps({"error": "Failed to process request", "details": str(e)}, ensure_ascii=False)
+
 
 # New tool for reading content metadata
 @server.tool()
@@ -369,6 +367,7 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
 
     except Exception as e:
         return json.dumps({"error": "Failed to process request", "details": str(e)})
+
 
 # # Run the server
 # if __name__ == "__main__":
