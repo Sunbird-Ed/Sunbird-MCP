@@ -293,13 +293,9 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
         
         artifact_urls = []
 
-        # Create a semaphore to limit concurrent requests
-        semaphore = asyncio.Semaphore(20)  # Limit to 20 concurrent requests
-
-
         # Create async session and process all content IDs with concurrency limit
         async with aiohttp.ClientSession() as session:
-            await run_concurrent_fetches(session, content_ids, fetch_and_filter, limit=20)
+            await run_concurrent_fetches(session, content_ids,artifact_urls, fetch_and_filter, limit=20)
 
         # Return the list of artifact URLs
         return json.dumps({
@@ -311,73 +307,73 @@ async def read_sunbird_content(params: Dict[str, Any]) -> str:
     except Exception as e:
         return json.dumps({"error": "Failed to process request", "details": str(e)})
 
-async def run_concurrent_fetches(session, content_ids, fetch_and_filter, limit=20):
+async def run_concurrent_fetches(session, content_ids,artifact_urls, fetch_and_filter, limit=20):
     semaphore = asyncio.Semaphore(limit)
     async def fetch_with_limit(content_id):
         async with semaphore:
-            await fetch_and_filter(session, content_id)
+            await fetch_and_filter(session, content_id,artifact_urls)
     tasks = [fetch_with_limit(content_id) for content_id in content_ids]
     await asyncio.gather(*tasks)
 
 async def retrieve_content_ids(content_id: str) -> Tuple[Optional[List[str]], Optional[str]]:
-        """
-        Helper function to retrieve leaf node content IDs for a given content ID.
-        
-        Args:
-            content_id: The content ID to fetch leaf nodes for
+    """
+    Helper function to retrieve leaf node content IDs for a given content ID.
+    
+    Args:
+        content_id: The content ID to fetch leaf nodes for
             
-        Returns:
-            A tuple containing:
-                - List of content IDs for the leaf nodes, or None if there was an error
-                - Error message string if there was an error, or None on success
+    Returns:
+        A tuple containing:
+            - List of content IDs for the leaf nodes, or None if there was an error
+            - Error message string if there was an error, or None on success
             
-        Note:
-            This is an internal helper function and should not be called directly.
-        """
-        try:
-            # Build API URL
-            api_url = f"{settings.API_BASE_URL.rstrip('/')}{CONTENT_ENDPOINT}/{content_id}"
+    Note:
+        This is an internal helper function and should not be called directly.
+    """
+    try:
+        # Build API URL
+        api_url = f"{settings.API_BASE_URL.rstrip('/')}{CONTENT_ENDPOINT}/{content_id}"
             
-            # First, get the content details with timeout
-            timeout = aiohttp.ClientTimeout(total=settings.REQUEST_TIMEOUT)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(
-                    api_url,
-                    headers={"Content-Type": "application/json"}
+        # First, get the content details with timeout
+        timeout = aiohttp.ClientTimeout(total=settings.REQUEST_TIMEOUT)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                api_url,
+                headers={"Content-Type": "application/json"}
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
                         return data["result"]["content"]["leafNodes"], None
                     error_data = await response.text()
                     return None, f"Sunbird API request failed with status {response.status}: {error_data}"
-        except Exception as e:
-            return None, f"Failed to process request: {str(e)}"
+    except Exception as e:
+        return None, f"Failed to process request: {str(e)}"
     
-async def fetch_and_filter(session, content_id):
-            """
-            Fetch content metadata and filter for PDF artifacts.
-            
-            Args:
-                session: aiohttp client session
-                content_id: SUNBIRD content ID to process
+async def fetch_and_filter(session, content_id,artifact_urls):
+    """
+    Fetch content metadata and filter for PDF artifacts.
+    
+    Args:
+        session: aiohttp client session
+        content_id: SUNBIRD content ID to process
                 
-            Note:
-                This function modifies the artifact_urls list in the parent scope.
-            """
-            try:
-                api_url = f"{settings.API_BASE_URL.rstrip('/')}{CONTENT_ENDPOINT}/{content_id}"
-                async with session.get(api_url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        content = data.get("result", {}).get("content", {})
-                        # Define excluded MIME type from config
-                        excluded_mime = settings.EXCLUDED_MIME_TYPE
-                        if content.get("mimeType") != excluded_mime and content.get("mimeType") == settings.PDF_MIME_TYPE and content.get("streamingUrl"):
-                            artifact_urls.append(content.get("streamingUrl"))
-                    else:
-                        logger.warning(f"Error with {content_id}: API returned status {response.status}")
-            except Exception as e:
-                logger.error(f"Error with {content_id}: {str(e)}", exc_info=True)
+    Note:
+        This function modifies the artifact_urls list in the parent scope.
+    """
+    try:
+        api_url = f"{settings.API_BASE_URL.rstrip('/')}{CONTENT_ENDPOINT}/{content_id}"
+        async with session.get(api_url) as response:
+            if response.status == 200:
+                data = await response.json()
+                content = data.get("result", {}).get("content", {})
+                # Define excluded MIME type from config
+                excluded_mime = settings.EXCLUDED_MIME_TYPE
+                if content.get("mimeType") != excluded_mime and content.get("mimeType") == settings.PDF_MIME_TYPE and content.get("streamingUrl"):
+                    artifact_urls.append(content.get("streamingUrl"))
+            else:
+                logger.warning(f"Error with {content_id}: API returned status {response.status}")
+    except Exception as e:
+        logger.error(f"Error with {content_id}: {str(e)}", exc_info=True)
 
 # # Run the server
 # if __name__ == "__main__":

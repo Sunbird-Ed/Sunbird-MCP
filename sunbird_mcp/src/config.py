@@ -6,13 +6,17 @@ from pydantic_settings import BaseSettings
 import os
 import json as _json
 
+import logging
+logger = logging.getLogger(__name__)
+
 def load_default_filters():
     env_json = os.environ.get("SUNBIRD_CONTENT_FILTERS_JSON")
     if env_json:
         try:
             return _json.loads(env_json)
-        except Exception:
-            pass  # fallback to default
+        except (ValueError, _json.JSONDecodeError) as e:
+            logger.warning(f"Failed to parse SUNBIRD_CONTENT_FILTERS_JSON: {e}")
+            # fallback to default
     return {
         "primaryCategory": [
             "Collection", "Resource", "Content Playlist", "Course", "Course Assessment",

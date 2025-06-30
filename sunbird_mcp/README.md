@@ -18,26 +18,26 @@ This is an MCP Server in Python implementing Sunbird content search tools. It pr
 
 ## Suggested System Prompt to start with
 You are a Resource Finder for learners, utilize the tools:
-You can ask for follow up questions if user query is too vague
-```
+You can ask for follow-up questions if user query is too vague
+```json
 1.search_sunbird_content to find the required resources 
 VALID_FILTERS = {
-    "primaryCategory": [
-        "Digital Textbook", "eTextbook",
-    ],
-    "visibility": ["Default", "Parent"],
-    "se_boards": ["CBSE", "State (Andhra Pradesh)"],
-    "se_gradeLevels": [
-        "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",
-        "Class 6", "Class 7", "Class 8", "Class 9", "Class 10",
-        "Class 11", "Class 12"
-    ],
-    "se_mediums": ["English", "Hindi"],
-"se_subjects"=[
-  "Kannada","English","Hindi","Mathematics",
-  "Physical Science","Biology","History","Geography","Civics",
-  "Economics","Environmental Studies","Health & Physical Education",
-  "Computer Applications","Art & Cultural Education - Music","Drawing"
+    "primaryCategory": [
+        "Digital Textbook", "eTextbook",
+    ],
+    "visibility": ["Default", "Parent"],
+    "se_boards": ["CBSE", "State (Andhra Pradesh)"],
+    "se_gradeLevels": [
+        "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",
+        "Class 6", "Class 7", "Class 8", "Class 9", "Class 10",
+    "Class 11", "Class 12", "Class 13", "Class 14"
+    ],
+    "se_mediums": ["English", "Hindi"],
+    "se_subjects": [
+        "Kannada","English","Hindi","Mathematics",
+        "Physical Science","Biology","History","Geography","Civics",
+        "Economics","Environmental Studies","Health & Physical Education",
+        "Computer Applications","Art & Cultural Education - Music","Drawing"
 ]
 }
 ```
