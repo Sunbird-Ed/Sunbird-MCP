@@ -40,6 +40,27 @@ def load_default_filters():
         "audience": ["Student", "Teacher"]
     }
 
+def load_sandbox_filters():
+    env_json = os.environ.get("SUNBIRD_SANDBOX_FILTERS_JSON")
+    if env_json:
+        try:
+            return _json.loads(env_json)
+        except (ValueError, _json.JSONDecodeError) as e:
+            logger.warning(f"Failed to parse SUNBIRD_SANDBOX_FILTERS_JSON: {e}")
+    # Default sandbox filters
+    return {
+        "subject": ["english", "hindi"],
+        "audience": ["Other", "Parent", "School head OR Officials", "Student", "Teacher"],
+        "status": ["Live"],
+        "contentType": ["Course"],
+        "primaryCategory": ["Course", "Course Assessment"],
+        "se_boards": ["CBSE"],
+        "se_gradeLevels": [f"Class {i}" for i in range(1, 5)],
+        "se_mediums": ["English", "Hindi", "Tamil", "Telugu"],
+        "creator": ["content creator"],
+        "organisation": ["sunbird org"]
+    }
+
 
 class Settings(BaseSettings):
     """Application settings and configuration."""
@@ -138,7 +159,36 @@ class Settings(BaseSettings):
         description="Enable/disable input validation"
     )
 
-    # Add any other configuration parameters here
+    # Sandbox Configuration
+    SANDBOX_API_BASE_URL: str = Field(
+        default="https://sandbox.sunbirded.org",
+        env="SUNBIRD_SANDBOX_API_BASE_URL",
+        description="Base URL for the Sunbird Sandbox API"
+    )
+    
+    # Sandbox specific filters
+    SANDBOX_FILTERS: Dict[str, List[str]] = Field(
+        default_factory=load_sandbox_filters,
+        env="SUNBIRD_SANDBOX_FILTERS_JSON",
+        description="Valid content filters for sandbox environment"
+    )
+    
+    # Sandbox default fields
+    SANDBOX_DEFAULT_FIELDS: List[str] = Field(
+        default_factory=lambda: [
+            "name", "appIcon", "mimeType", "gradeLevel", "identifier", "medium", "pkgVersion",
+            "board", "subject", "resourceType", "contentType", "channel", "organisation",
+            "trackable", "se_boards", "se_subjects", "se_mediums", "se_gradeLevels", "creator"
+        ],
+        description="Default fields to include in sandbox search results"
+    )
+    
+    # Sandbox default facets
+    SANDBOX_VALID_FACETS: List[str] = Field(
+        default_factory=lambda: ["se_subjects", "creator", "organisation"],
+        description="Default facets for sandbox search"
+    )
+    
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'
