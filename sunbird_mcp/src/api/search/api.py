@@ -126,17 +126,17 @@ class SearchProcessor(BaseProcessor[SearchRequest]):
 
 def _process_search_results(data: dict) -> str:
     """Process and format the search results from the Sunbird API."""
-    book_list = {}
-    for index, content in enumerate(data.get("result", {}).get("content", [])):
-        book_details = {}
-        book_details["name"] = content.get("name", "")
-        book_details["identifier"] = content.get("identifier", "")
-        book_details["se_subjects"] = content.get("se_subjects", [])
-        book_details["se_mediums"] = content.get("se_mediums", [])
-        book_details["se_boards"] = content.get("se_boards", [])
-        book_details["se_gradeLevels"] = content.get("se_gradeLevels", [])
-        book_number = f"book_{index+1}"
-        book_list[book_number] = book_details
+    book_list = {
+        f"book_{index+1}": {
+            "name": content.get("name", ""),
+            "identifier": content.get("identifier", ""),
+            "se_subjects": content.get("se_subjects", []),
+            "se_mediums": content.get("se_mediums", []),
+            "se_boards": content.get("se_boards", []),
+            "se_gradeLevels": content.get("se_gradeLevels", [])
+        }
+        for index, content in enumerate(data.get("result", {}).get("content", []))
+    }
     return json.dumps(book_list, ensure_ascii=False)
 
 async def search_sunbird_content(search_params: Dict[str, Any]) -> Dict[str, Any]:
