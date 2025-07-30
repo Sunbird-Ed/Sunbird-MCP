@@ -1,11 +1,12 @@
 import aiohttp
 import asyncio
-from typing import Dict, Any, List, Optional , Tuple
+from typing import Dict, Any, List, Optional, Tuple
 from core.base import BaseProcessor, BaseConfig
 from models.content_models import ContentRequest, ContentResponse
 from .validation import validate_content_request
 from config import settings
 import logging
+from utils.exceptions import ValidationError as AppValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,6 @@ class ContentProcessor(BaseProcessor[ContentRequest]):
     """
     def __init__(self, config: Optional[ContentConfig] = None):
         super().__init__(config or ContentConfig())
-        self.config = self.config or ContentConfig()
         self.session = None
 
     async def initialize(self):
@@ -97,7 +97,7 @@ class ContentProcessor(BaseProcessor[ContentRequest]):
     async def pre_process(self, request_data: Dict[str, Any]) -> ContentRequest:
         validated, errors = validate_content_request(request_data)
         if errors:
-            raise ValueError(errors)
+            raise AppValidationError("Invalid content parameters", errors)
         return ContentRequest(**validated)
 
     async def execute(self, request: ContentRequest) -> Dict[str, Any]:
