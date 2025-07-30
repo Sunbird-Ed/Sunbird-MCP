@@ -4,9 +4,9 @@ Data models for the Sunbird MCP server.
 This module defines the Pydantic models used for request/response validation
 and data transformation throughout the application.
 """
-from typing import Dict, List, Optional, Union, Literal,Any
-from pydantic import BaseModel, Field, HttpUrl, validator
-from datetime import datetime
+from typing import Dict, List, Optional, Any
+from pydantic import BaseModel, Field, HttpUrl
+from datetime import datetime, timezone
 
 # Request Models
 class ErrorResponse(BaseModel):
@@ -28,7 +28,7 @@ class HealthCheckResponse(BaseModel):
     """Health check response model."""
     status: str = Field(..., description="Service status")
     version: str = Field(..., description="API version")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     dependencies: Dict[str, str] = Field(
         default_factory=dict,
         description="Status of external dependencies"

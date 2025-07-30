@@ -5,13 +5,13 @@ This module provides functionality to retrieve and process content from the Sunb
 import aiohttp
 import asyncio
 import logging
-from typing import Dict, Any, List, Optional, Tuple, Set
+from typing import Dict, Any, List, Optional, Set
 
 from core.base import BaseProcessor, BaseConfig
 from models.sandbox_content_models import SandboxContentRequest, SandboxContentResponse, SandboxContentItem
 from .validation import validate_content_request
 from config import settings
-from utils.exceptions import ValidationError as AppValidationError, SunbirdAPIError
+from utils.exceptions import ValidationError as AppValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -106,15 +106,42 @@ class SandboxContentProcessor(BaseProcessor[SandboxContentRequest]):
             raise
 
     async def _process_child_nodes(self, node_ids: List[str]) -> None:
-        """Process multiple child nodes concurrently."""
+        """Process multiple child nodes concurrently.
+        
+        Args:
+            node_ids: List of content node IDs to process
+            
+        Note:
+            - Processes nodes concurrently with a semaphore to limit concurrency
+            - Continues processing even if some nodes fail
+            - Logs errors for failed nodes
+        """
+        if not node_ids:
+            return
+            
         semaphore = asyncio.Semaphore(self.config.max_concurrent)
         
         async def process_node(node_id: str):
             async with semaphore:
-                await self._process_content(node_id)
+                try:
+                    await self._process_content(node_id)
+                    return (node_id, None)
+                except Exception as e:
+                    return (node_id, e)
         
+        # Process all nodes, collecting any exceptions
         tasks = [process_node(node_id) for node_id in node_ids]
-        await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=False)
+        
+        # Log any errors that occurred
+        for node_id, error in results:
+            if error is not None:
+                logger.error(
+                    "Error processing node %s: %s",
+                    node_id,
+                    str(error),
+                    exc_info=error
+                )
 
     async def _fetch_content(self, content_id: str) -> Optional[Dict[str, Any]]:
         """Fetch content details from the API."""

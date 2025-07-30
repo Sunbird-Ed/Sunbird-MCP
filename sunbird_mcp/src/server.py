@@ -12,11 +12,8 @@ Key Features:
 - Validates input parameters for API requests
 """
 
-import json
 import logging
-import aiohttp
-import asyncio
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any
 from mcp.server.fastmcp import FastMCP
 from config import settings
 from models.search_models import SearchRequest
@@ -94,7 +91,7 @@ async def search_content(search_params: SearchRequest) -> dict:
     Returns:
         dict: JSON-serializable dict containing search results or error information
     """
-    return await search_sunbird_content(search_params.model_dump(),use_sandbox=True)
+    return await search_sunbird_content(search_params.model_dump())
 
 # New tool for reading content metadata
 @server.tool()

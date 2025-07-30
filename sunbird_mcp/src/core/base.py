@@ -5,7 +5,7 @@ This module contains abstract base classes that define the core interfaces
 for API processors and data models used throughout the application.
 """
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, Optional, TypeVar, Type
+from typing import Any, Dict, Generic, Optional, TypeVar
 from pydantic import BaseModel, Field
 from utils.exceptions import SunbirdAPIError, AuthenticationError, ResourceNotFoundError, RateLimitExceededError, ValidationError
 
@@ -171,4 +171,4 @@ class BaseProcessor(ABC, Generic[T]):
                 message="An unexpected error occurred",
                 status_code=500,
                 details={"error": str(e)}
-            )
+            ) from e

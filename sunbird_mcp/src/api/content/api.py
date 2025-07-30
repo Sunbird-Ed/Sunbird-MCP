@@ -1,6 +1,6 @@
 import aiohttp
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional , Tuple
 from core.base import BaseProcessor, BaseConfig
 from models.content_models import ContentRequest, ContentResponse
 from .validation import validate_content_request
@@ -23,7 +23,7 @@ class ContentConfig(BaseConfig):
         """Get the full content URL by combining base URL and endpoint."""
         return f"{self.base_url.rstrip('/')}{self.content_endpoint}"
 
-async def retrieve_content_ids(content_id: str, config: Optional[ContentConfig] = None) -> (List[str], str):
+async def retrieve_content_ids(content_id: str, config: Optional[ContentConfig] = None) -> Tuple[Optional[List[str]], Optional[str]]:
     """
     Helper function to retrieve leaf node content IDs for a given content ID.
     Returns (content_ids, error_message)

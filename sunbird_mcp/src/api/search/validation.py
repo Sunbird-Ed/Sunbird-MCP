@@ -1,6 +1,5 @@
 # d:\sunbird_mcp\Sunbird-MCP\sunbird_mcp\src\api\search\validation.py
 from typing import Dict, List, Tuple, Any, Optional
-from models.search_models import SearchRequest
 from config import settings
 
 VALID_FILTERS = settings.CONTENT_FILTERS

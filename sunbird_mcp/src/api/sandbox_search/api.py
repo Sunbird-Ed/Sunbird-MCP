@@ -2,10 +2,8 @@
 """Sandbox Search API implementation."""
 import aiohttp
 import logging
-import json
 from typing import Any, Dict, Optional, List
 
-from pydantic import ValidationError
 
 from core.base import BaseProcessor, BaseConfig
 from models.search_models import SearchRequest, SearchResponse
@@ -25,11 +23,13 @@ class SandboxSearchConfig(BaseConfig):
     max_retries: int = 3
     default_limit: int = 10
     max_limit: int = 100
+    org_details: str = "orgName,email"
+    framework: str = "NCF"
     
     @property
     def full_search_url(self) -> str:
         """Get the full search URL by combining base URL and endpoint with required query params."""
-        return f"{self.base_url.rstrip('/')}{self.search_endpoint}?orgdetails=orgName,email&framework=NCF"
+        return f"{self.base_url.rstrip('/')}{self.search_endpoint}?orgdetails={self.org_details}&framework={self.framework}"
 
 class SandboxSearchProcessor(BaseProcessor[SearchRequest]):
     """Processor for handling search requests in the Sandbox environment."""
@@ -92,10 +92,10 @@ class SandboxSearchProcessor(BaseProcessor[SearchRequest]):
                 
         except aiohttp.ClientError as e:
             logger.error("Sandbox Search API request failed for URL %s: %s", url, str(e), exc_info=True)
-            raise SunbirdAPIError(f"Failed to execute search in sandbox: {str(e)}")
+            raise SunbirdAPIError(f"Failed to execute search in sandbox: {str(e)}") from e
         except Exception as e:
             logger.error("Unexpected error during sandbox search: %s", str(e), exc_info=True)
-            raise SunbirdAPIError("An unexpected error occurred during sandbox search")
+            raise SunbirdAPIError("An unexpected error occurred during sandbox search") from e
 
     async def post_process(self, response: Dict[str, Any]) -> SearchResponse:
         """
